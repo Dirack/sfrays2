@@ -85,7 +85,7 @@ int atela_step (int dim     /* dimensionality */,
 	
     if (!intime) h = dt;
 	
-    for (it = 0; it < nt; it++) {
+    for (it = 0; it < nt; it++) { /* laço do raio */
 		v = slow2(par, x);
 		sum = 0.;
 		for (i=0; i < dim; i++) {

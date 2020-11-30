@@ -19,10 +19,10 @@
 
 #include <rsf.h>
 
-#include "raytrace.h"
-#include "grid2.h"
-#include "grid3.h"
-#include "atela.h"
+#include "raytrace.h" /* Interface do traçador de raio */
+#include "grid2.h" /* grid 2d para o traçamento de raio */
+#include "grid3.h" /* grid 3d para o traçamento de raio */
+#include "atela.h" /* Integrador simplético */
 
 /* Define o ponteiro para a estrutura do traçador de raio TAD */
 #ifndef _raytrace_h
@@ -74,10 +74,12 @@ static void iso_rhs(void* par, float* y, float* f)
 
 static int term(void* par, float* y)
 /* grid termination */
+/* As funções grid[2-3]_term retornam 0 se o raio está no grid
+ * e um número diferente de 0 se o raio saiu do grid */
 {
     raytrace rt;
     
-    rt = (raytrace) par;
+    rt = (raytrace) par; /* Faz o casting do ponteiro passado para raytrace, ponteiro para RayTrace */
 	
     switch (rt->dim) {
 		case 2:
@@ -115,6 +117,7 @@ raytrace raytrace_init(int dim            /* dimensionality (2 or 3) */,
     rt->dt = dt;
     rt->z0 = o[0];
     
+    /* inicializa o grid correspondente, 2D ou 3D */
     switch (dim) {
 		case 2:
 			rt->grd2 = grid2_init (n[0], o[0], d[0], 
@@ -178,7 +181,7 @@ int trace_ray (raytrace rt  /* ray tracing object */,
     dim = rt->dim;
     nt = rt->nt;
 	
-    if (!rt->sym) {
+    if (!rt->sym) { /* Utiliza Runge Kutta se sym=true */
 		switch (dim) {
 			case 2:
 				s2 = grid2_vel(rt->grd2,x);
@@ -204,7 +207,7 @@ int trace_ray (raytrace rt  /* ray tracing object */,
 			x[i] = y[i];
 			p[i] = y[i+dim];
 		}
-    } else {
+    } else { /* Utiliza o integrador simplético se sym=false */
 		switch (dim) {
 			case 2:
 				it = atela_step (dim, nt, rt->dt, true, x, p, 
@@ -220,8 +223,10 @@ int trace_ray (raytrace rt  /* ray tracing object */,
 				sf_error("%s: cannot handle %d dimensions",__FILE__,rt->dim);
 				break;
 		}
-    }
+    } /* If para utilizar o integrador simplético ou runge kutta */
     
+    /* Usa o sinal de it como forma de avaliar se o raio saiu pelo topo
+     * do modelo, ou pelas laterais e a base. */
     if (it > 0 && x[0] > rt->z0) {
 		return (-it); /* exit through the side or bottom */
     } else {
